@@ -13,10 +13,6 @@ type Config struct {
 	Loc          string
 }
 
-var (
-	db *gorm.DB
-)
-
 type configFile struct {
 	Server Config
 }
@@ -28,7 +24,36 @@ func loadConfiguration(cfgFile string) (Config, error) {
 }
 
 func Db() *gorm.DB {
+	var db *gorm.DB
+
 	conf, err := loadConfiguration("data.conf")
+
+	if err != nil {
+		panic(err)
+	}
+
+	if db == nil {
+		urlVals := url.Values{
+			"charset":   {conf.Charset},
+			"parseTime": {conf.ParseTime},
+			"loc":       {conf.Loc},
+		}
+		args := conf.DbConnection + "?" + urlVals.Encode()
+		dbl, err := gorm.Open("mysql", args)
+		if err != nil {
+			panic(err)
+		}
+		db = &dbl
+		db.SingularTable(true)
+	}
+
+	return db
+}
+
+func DBAlt(cfgFile string) *gorm.DB {
+	var db *gorm.DB
+
+	conf, err := loadConfiguration(cfgFile)
 
 	if err != nil {
 		panic(err)
